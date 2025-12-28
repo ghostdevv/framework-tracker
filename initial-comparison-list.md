@@ -5,7 +5,8 @@
 - [Next.js](https://nextjs.org) - React
 - [Nuxt](https://nuxt.com) - Vue
 - [SvelteKit](https://kit.svelte.dev) - Svelte
-- [Remix](https://remix.run) - Preact
+- [Remix](https://remix.run) - React (Preact in beta for new version)
+- [React Router](https://reactrouter.com) - React
 - [Astro](https://astro.build) - Framework-agnostic
 - [SolidStart](https://start.solidjs.com) - Solid
 - [Qwik City](https://qwik.dev/docs/qwikcity/) - Qwik

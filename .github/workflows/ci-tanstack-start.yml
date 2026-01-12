@@ -21,7 +21,7 @@ on:
       - 'prettier.config.js'
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:

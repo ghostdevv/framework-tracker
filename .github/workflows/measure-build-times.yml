@@ -20,6 +20,10 @@ jobs:
   measure:
     runs-on: ubuntu-latest
 
+    concurrency:
+      group: measure-and-commit-stats-${{ github.head_ref || github.ref }}
+      cancel-in-progress: false
+
     permissions:
       contents: write
 
@@ -83,6 +87,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pull latest changes in case another workflow pushed
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase || true
+
           git add ${{ inputs.package-path }}/.ci-stats.json
 
           if git diff --staged --quiet; then

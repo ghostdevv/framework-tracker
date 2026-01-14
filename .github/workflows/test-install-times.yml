@@ -25,6 +25,10 @@ jobs:
       - name: Measure Next.js install time
         id: next
         run: |
+          # Clear pnpm store for fair measurement
+          rm -rf ~/.local/share/pnpm/store
+          pnpm store prune || true
+
           cp -r packages/starter-next-js /tmp/next-test
           cd /tmp/next-test
           START=$(date +%s%N)
@@ -37,6 +41,10 @@ jobs:
       - name: Measure React Router install time
         id: react_router
         run: |
+          # Clear pnpm store for fair measurement
+          rm -rf ~/.local/share/pnpm/store
+          pnpm store prune || true
+
           cp -r packages/starter-react-router /tmp/react-router-test
           cd /tmp/react-router-test
           START=$(date +%s%N)
@@ -49,6 +57,10 @@ jobs:
       - name: Measure TanStack Start install time
         id: tanstack
         run: |
+          # Clear pnpm store for fair measurement
+          rm -rf ~/.local/share/pnpm/store
+          pnpm store prune || true
+
           cp -r packages/starter-tanstack-start-react /tmp/tanstack-test
           cd /tmp/tanstack-test
           START=$(date +%s%N)
@@ -61,6 +73,10 @@ jobs:
       - name: Measure Nuxt install time
         id: nuxt
         run: |
+          # Clear pnpm store for fair measurement
+          rm -rf ~/.local/share/pnpm/store
+          pnpm store prune || true
+
           cp -r packages/starter-nuxt /tmp/nuxt-test
           cd /tmp/nuxt-test
           START=$(date +%s%N)

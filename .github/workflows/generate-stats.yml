@@ -5,16 +5,39 @@ on:
     branches: [main]
     paths:
       - 'packages/starter-*/**'
+      - 'packages/app-*/**'
       - 'packages/stats-generator/**'
       - '.github/workflows/generate-stats.yml'
+      - '.github/frameworks.json'
       - 'package.json'
 
 jobs:
-  # Install time measurements run in parallel on fresh runners for fair comparison
-  next-install:
+  # Load framework config and create filtered matrices
+  setup:
     runs-on: ubuntu-latest
     outputs:
-      time: ${{ steps.measure.outputs.time }}
+      install-matrix: ${{ steps.set-matrix.outputs.install }}
+      build-matrix: ${{ steps.set-matrix.outputs.build }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set matrices from frameworks.json
+        id: set-matrix
+        run: |
+          FRAMEWORKS=$(cat .github/frameworks.json)
+          echo "install=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | contains(["install"]))]')" >> $GITHUB_OUTPUT
+          echo "build=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | contains(["build"]))]')" >> $GITHUB_OUTPUT
+
+  # Install time measurements - parallel on fresh runners for fair comparison
+  measure-install:
+    needs: setup
+    if: needs.setup.outputs.install-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJson(needs.setup.outputs.install-matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,139 +50,32 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Measure Next.js install time
-        id: measure
+      - name: Measure ${{ matrix.framework.displayName }} install time
         run: |
-          cp -r packages/starter-next-js /tmp/next-test
-          cd /tmp/next-test
+          cp -r packages/${{ matrix.framework.package }} /tmp/framework-test
+          cd /tmp/framework-test
           START=$(date +%s%N)
           pnpm install
           END=$(date +%s%N)
           ELAPSED=$((($END - $START) / 1000000))
-          echo "time=$ELAPSED" >> $GITHUB_OUTPUT
-          echo "Next.js install time: ${ELAPSED}ms"
+          echo "${{ matrix.framework.displayName }} install time: ${ELAPSED}ms"
+          echo "$ELAPSED" > install-time.txt
 
-  react-router-install:
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{ steps.measure.outputs.time }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Upload install time result
+        uses: actions/upload-artifact@v4
         with:
-          node-version: '24'
+          name: install-time-${{ matrix.framework.name }}
+          path: /tmp/framework-test/install-time.txt
+          retention-days: 1
 
-      - name: Measure React Router install time
-        id: measure
-        run: |
-          cp -r packages/starter-react-router /tmp/react-router-test
-          cd /tmp/react-router-test
-          START=$(date +%s%N)
-          pnpm install
-          END=$(date +%s%N)
-          ELAPSED=$((($END - $START) / 1000000))
-          echo "time=$ELAPSED" >> $GITHUB_OUTPUT
-          echo "React Router install time: ${ELAPSED}ms"
-
-  tanstack-install:
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{ steps.measure.outputs.time }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Measure TanStack Start install time
-        id: measure
-        run: |
-          cp -r packages/starter-tanstack-start-react /tmp/tanstack-test
-          cd /tmp/tanstack-test
-          START=$(date +%s%N)
-          pnpm install
-          END=$(date +%s%N)
-          ELAPSED=$((($END - $START) / 1000000))
-          echo "time=$ELAPSED" >> $GITHUB_OUTPUT
-          echo "TanStack Start install time: ${ELAPSED}ms"
-
-  nuxt-install:
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{ steps.measure.outputs.time }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Measure Nuxt install time
-        id: measure
-        run: |
-          cp -r packages/starter-nuxt /tmp/nuxt-test
-          cd /tmp/nuxt-test
-          START=$(date +%s%N)
-          pnpm install
-          END=$(date +%s%N)
-          ELAPSED=$((($END - $START) / 1000000))
-          echo "time=$ELAPSED" >> $GITHUB_OUTPUT
-          echo "Nuxt install time: ${ELAPSED}ms"
-
-  sveltekit-install:
-    runs-on: ubuntu-latest
-    outputs:
-      time: ${{ steps.measure.outputs.time }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Measure SvelteKit install time
-        id: measure
-        run: |
-          cp -r packages/starter-sveltekit /tmp/sveltekit-test
-          cd /tmp/sveltekit-test
-          START=$(date +%s%N)
-          pnpm install
-          END=$(date +%s%N)
-          ELAPSED=$((($END - $START) / 1000000))
-          echo "time=$ELAPSED" >> $GITHUB_OUTPUT
-          echo "SvelteKit install time: ${ELAPSED}ms"
-
-  # Main job that measures builds and generates stats
+  # Build and other measurements + generate stats
   generate-stats:
+    needs: [setup, measure-install]
+    if: always() && needs.setup.result == 'success'
     runs-on: ubuntu-latest
-    needs: [next-install, react-router-install, tanstack-install, nuxt-install, sveltekit-install]
-
     permissions:
       contents: write
       pull-requests: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -171,158 +87,73 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Measure Next.js builds
-        id: next
+      - name: Download install time artifacts
+        if: needs.setup.outputs.install-matrix != '[]' && needs.measure-install.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: install-time-*
+
+      - name: Measure build times
+        if: needs.setup.outputs.build-matrix != '[]'
         run: |
-          # Cold build
-          START=$(date +%s%N)
-          pnpm build:next
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
+          BUILD_FRAMEWORKS=$(cat .github/frameworks.json | jq -c '[.[] | select(.measurements | contains(["build"]))]')
 
-          # Warm build
-          START=$(date +%s%N)
-          pnpm build:next
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
+          echo "$BUILD_FRAMEWORKS" | jq -c '.[]' | while read -r framework; do
+            NAME=$(echo "$framework" | jq -r '.name')
+            DISPLAY_NAME=$(echo "$framework" | jq -r '.displayName')
+            BUILD_SCRIPT=$(echo "$framework" | jq -r '.buildScript')
 
-          echo "cold=$COLD" >> $GITHUB_OUTPUT
-          echo "warm=$WARM" >> $GITHUB_OUTPUT
-          echo "Next.js - Cold: ${COLD}ms, Warm: ${WARM}ms"
+            START=$(date +%s%N)
+            pnpm $BUILD_SCRIPT
+            END=$(date +%s%N)
+            COLD=$((($END - $START) / 1000000))
 
-      - name: Measure React Router builds
-        id: react_router
-        run: |
-          # Cold build
-          START=$(date +%s%N)
-          pnpm build:react-router
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
+            START=$(date +%s%N)
+            pnpm $BUILD_SCRIPT
+            END=$(date +%s%N)
+            WARM=$((($END - $START) / 1000000))
 
-          # Warm build
-          START=$(date +%s%N)
-          pnpm build:react-router
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
+            echo "$DISPLAY_NAME - Cold: ${COLD}ms, Warm: ${WARM}ms"
+            echo "{\"cold\": $COLD, \"warm\": $WARM}" > "/tmp/$NAME-build-time.json"
+          done
 
-          echo "cold=$COLD" >> $GITHUB_OUTPUT
-          echo "warm=$WARM" >> $GITHUB_OUTPUT
-          echo "React Router - Cold: ${COLD}ms, Warm: ${WARM}ms"
-
-      - name: Measure TanStack Start builds
-        id: tanstack
-        run: |
-          # Cold build
-          START=$(date +%s%N)
-          pnpm build:tanstack
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
-
-          # Warm build
-          START=$(date +%s%N)
-          pnpm build:tanstack
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
-
-          echo "cold=$COLD" >> $GITHUB_OUTPUT
-          echo "warm=$WARM" >> $GITHUB_OUTPUT
-          echo "TanStack Start - Cold: ${COLD}ms, Warm: ${WARM}ms"
-
-      - name: Measure Nuxt builds
-        id: nuxt
-        run: |
-          # Cold build
-          START=$(date +%s%N)
-          pnpm build:nuxt
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
-
-          # Warm build
-          START=$(date +%s%N)
-          pnpm build:nuxt
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
-
-          echo "cold=$COLD" >> $GITHUB_OUTPUT
-          echo "warm=$WARM" >> $GITHUB_OUTPUT
-          echo "Nuxt - Cold: ${COLD}ms, Warm: ${WARM}ms"
-
-      - name: Measure SvelteKit builds
-        id: sveltekit
-        run: |
-          # Cold build
-          START=$(date +%s%N)
-          pnpm build:sveltekit
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
-
-          # Warm build
-          START=$(date +%s%N)
-          pnpm build:sveltekit
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
-
-          echo "cold=$COLD" >> $GITHUB_OUTPUT
-          echo "warm=$WARM" >> $GITHUB_OUTPUT
-          echo "SvelteKit - Cold: ${COLD}ms, Warm: ${WARM}ms"
-
-      - name: Save all CI stats
+      - name: Save CI stats
         run: |
           TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          FRAMEWORKS=$(cat .github/frameworks.json)
 
-          # Save Next.js stats
-          mkdir -p packages/starter-next-js
-          echo '{
-            "installTimeMs": ${{ needs.next-install.outputs.time }},
-            "coldBuildTimeMs": ${{ steps.next.outputs.cold }},
-            "warmBuildTimeMs": ${{ steps.next.outputs.warm }},
-            "timingMeasuredAt": "'$TIMESTAMP'",
-            "runner": "ubuntu-latest"
-          }' > packages/starter-next-js/.ci-stats.json
+          echo "$FRAMEWORKS" | jq -c '.[]' | while read -r framework; do
+            NAME=$(echo "$framework" | jq -r '.name')
+            PACKAGE=$(echo "$framework" | jq -r '.package')
+            DISPLAY_NAME=$(echo "$framework" | jq -r '.displayName')
+            MEASUREMENTS=$(echo "$framework" | jq -r '.measurements | join(",")')
 
-          # Save React Router stats
-          mkdir -p packages/starter-react-router
-          echo '{
-            "installTimeMs": ${{ needs.react-router-install.outputs.time }},
-            "coldBuildTimeMs": ${{ steps.react_router.outputs.cold }},
-            "warmBuildTimeMs": ${{ steps.react_router.outputs.warm }},
-            "timingMeasuredAt": "'$TIMESTAMP'",
-            "runner": "ubuntu-latest"
-          }' > packages/starter-react-router/.ci-stats.json
+            JSON="{ \"timingMeasuredAt\": \"$TIMESTAMP\", \"runner\": \"ubuntu-latest\""
 
-          # Save TanStack Start stats
-          mkdir -p packages/starter-tanstack-start-react
-          echo '{
-            "installTimeMs": ${{ needs.tanstack-install.outputs.time }},
-            "coldBuildTimeMs": ${{ steps.tanstack.outputs.cold }},
-            "warmBuildTimeMs": ${{ steps.tanstack.outputs.warm }},
-            "timingMeasuredAt": "'$TIMESTAMP'",
-            "runner": "ubuntu-latest"
-          }' > packages/starter-tanstack-start-react/.ci-stats.json
+            if [[ "$MEASUREMENTS" == *"install"* ]] && [[ -f "artifacts/install-time-$NAME/install-time.txt" ]]; then
+              INSTALL_TIME=$(cat "artifacts/install-time-$NAME/install-time.txt")
+              JSON="$JSON, \"installTimeMs\": $INSTALL_TIME"
+            fi
 
-          # Save Nuxt stats
-          mkdir -p packages/starter-nuxt
-          echo '{
-            "installTimeMs": ${{ needs.nuxt-install.outputs.time }},
-            "coldBuildTimeMs": ${{ steps.nuxt.outputs.cold }},
-            "warmBuildTimeMs": ${{ steps.nuxt.outputs.warm }},
-            "timingMeasuredAt": "'$TIMESTAMP'",
-            "runner": "ubuntu-latest"
-          }' > packages/starter-nuxt/.ci-stats.json
+            if [[ "$MEASUREMENTS" == *"build"* ]] && [[ -f "/tmp/$NAME-build-time.json" ]]; then
+              BUILD_DATA=$(cat "/tmp/$NAME-build-time.json")
+              COLD=$(echo "$BUILD_DATA" | jq -r '.cold')
+              WARM=$(echo "$BUILD_DATA" | jq -r '.warm')
+              JSON="$JSON, \"coldBuildTimeMs\": $COLD, \"warmBuildTimeMs\": $WARM"
+            fi
 
-          # Save SvelteKit stats
-          mkdir -p packages/starter-sveltekit
-          echo '{
-            "installTimeMs": ${{ needs.sveltekit-install.outputs.time }},
-            "coldBuildTimeMs": ${{ steps.sveltekit.outputs.cold }},
-            "warmBuildTimeMs": ${{ steps.sveltekit.outputs.warm }},
-            "timingMeasuredAt": "'$TIMESTAMP'",
-            "runner": "ubuntu-latest"
-          }' > packages/starter-sveltekit/.ci-stats.json
+            JSON="$JSON }"
+
+            echo "$DISPLAY_NAME stats: $JSON"
+            mkdir -p "packages/$PACKAGE"
+            echo "$JSON" | jq '.' > "packages/$PACKAGE/.ci-stats.json"
+          done
 
       - name: Generate stats
         run: pnpm generate:stats
@@ -335,21 +166,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if there are changes
           if [[ -z $(git status -s) ]]; then
             echo "No changes to commit"
             exit 0
           fi
 
-          # Create or switch to branch
           git checkout -B automated-stats-update
-
-          # Commit and push changes
           git add .
           git commit -m "Update CI stats and generated stats after starter changes"
           git push --force-with-lease origin automated-stats-update
 
-          # Create PR if no open PR exists for this branch
           if ! gh pr list --head automated-stats-update --state open | grep -q .; then
             gh pr create \
               --title "Update CI stats and generated stats after starter changes" \
@@ -366,7 +192,6 @@ jobs:
             echo "PR already exists, updated with new commits"
           fi
 
-          # Enable auto-merge and delete branch after merge
           gh pr merge automated-stats-update --auto --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

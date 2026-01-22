@@ -1,0 +1,37 @@
+[
+  {
+    "name": "next",
+    "displayName": "Next.js",
+    "package": "starter-next-js",
+    "buildScript": "build:next",
+    "measurements": ["install", "build", "dependencies"]
+  },
+  {
+    "name": "react-router",
+    "displayName": "React Router",
+    "package": "starter-react-router",
+    "buildScript": "build:react-router",
+    "measurements": ["install", "build", "dependencies"]
+  },
+  {
+    "name": "tanstack",
+    "displayName": "TanStack Start",
+    "package": "starter-tanstack-start-react",
+    "buildScript": "build:tanstack",
+    "measurements": ["install", "build", "dependencies"]
+  },
+  {
+    "name": "nuxt",
+    "displayName": "Nuxt",
+    "package": "starter-nuxt",
+    "buildScript": "build:nuxt",
+    "measurements": ["install", "build", "dependencies"]
+  },
+  {
+    "name": "sveltekit",
+    "displayName": "SvelteKit",
+    "package": "starter-sveltekit",
+    "buildScript": "build:sveltekit",
+    "measurements": ["install", "build", "dependencies"]
+  }
+]

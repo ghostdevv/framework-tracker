@@ -1,17 +1,26 @@
+export type MeasurementType = 'install' | 'build' | 'test' | 'dependencies'
+
+export interface FrameworkConfig {
+  name: string
+  displayName: string
+  package: string
+  buildScript?: string
+  testScript?: string
+  measurements: MeasurementType[]
+}
+
 export interface CIStats {
   installTimeMs?: number
   coldBuildTimeMs?: number
   warmBuildTimeMs?: number
+  testTimeMs?: number
   timingMeasuredAt?: string
+  runner?: string
 }
 
 export interface FrameworkStats extends CIStats {
-  prodDependencies: number
-  devDependencies: number
-}
-
-export interface StatsMap {
-  [key: string]: FrameworkStats
+  prodDependencies?: number
+  devDependencies?: number
 }
 
 export interface PackageJson {

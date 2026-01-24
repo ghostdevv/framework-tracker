@@ -3,10 +3,10 @@
   "type": "starter-kit",
   "prodDependencies": 3,
   "devDependencies": 2,
-  "npmGraphUrl": "https://npmgraph.js.org/?q=https://github.com/e18e/framework-tracker/blob/main/packages/starter-nuxt/package.json",
-  "installTimeMs": 30422,
-  "coldBuildTimeMs": 5884,
-  "warmBuildTimeMs": 5707,
-  "timingMeasuredAt": "2026-01-24T09:33:34Z",
+  "package": "starter-nuxt",
+  "installTimeMs": 7369,
+  "coldBuildTimeMs": 6721,
+  "warmBuildTimeMs": 6627,
+  "timingMeasuredAt": "2026-01-22T22:54:52Z",
   "runner": "ubuntu-latest"
 }

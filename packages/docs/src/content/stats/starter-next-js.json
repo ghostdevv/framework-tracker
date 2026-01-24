@@ -3,10 +3,10 @@
   "type": "starter-kit",
   "prodDependencies": 3,
   "devDependencies": 6,
-  "npmGraphUrl": "https://npmgraph.js.org/?q=https://github.com/e18e/framework-tracker/blob/main/packages/starter-next-js/package.json",
-  "installTimeMs": 7284,
-  "coldBuildTimeMs": 7461,
-  "warmBuildTimeMs": 6719,
-  "timingMeasuredAt": "2026-01-24T09:33:34Z",
+  "package": "starter-next-js",
+  "installTimeMs": 7307,
+  "coldBuildTimeMs": 8293,
+  "warmBuildTimeMs": 7593,
+  "timingMeasuredAt": "2026-01-22T22:54:52Z",
   "runner": "ubuntu-latest"
 }

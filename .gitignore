@@ -14,10 +14,12 @@ build/
 out/
 .output/
 dist-ssr/
+app.config.timestamp_*.js
 
 # Framework-specific generated files
 .astro/
 .svelte-kit/
+.output/
 .next/
 .nuxt/
 .nitro/

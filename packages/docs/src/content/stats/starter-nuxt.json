@@ -4,12 +4,12 @@
   "prodDependencies": 3,
   "devDependencies": 2,
   "package": "starter-nuxt",
-  "installTimeMs": 6593,
-  "coldBuildTimeMs": 6385,
-  "warmBuildTimeMs": 5938,
-  "buildOutputSize": 0,
-  "timingMeasuredAt": "2026-01-25T11:15:55Z",
+  "installTimeMs": 7447,
+  "coldBuildTimeMs": 6567,
+  "warmBuildTimeMs": 5964,
+  "buildOutputSize": 1934116,
+  "timingMeasuredAt": "2026-01-26T09:00:13Z",
   "runner": "ubuntu-latest",
-  "nodeModulesSize": 160441140,
-  "nodeModulesSizeProdOnly": 160362999
+  "nodeModulesSize": 160444539,
+  "nodeModulesSizeProdOnly": 160366398
 }

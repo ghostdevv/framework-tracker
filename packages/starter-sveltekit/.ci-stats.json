@@ -1,9 +1,10 @@
 {
-  "timingMeasuredAt": "2026-01-25T11:15:55Z",
+  "timingMeasuredAt": "2026-01-26T09:00:13Z",
   "runner": "ubuntu-latest",
-  "installTimeMs": 2749,
+  "installTimeMs": 2881,
   "nodeModulesSize": 57337636,
   "nodeModulesSizeProdOnly": 722,
-  "coldBuildTimeMs": 4673,
-  "warmBuildTimeMs": 3798
+  "coldBuildTimeMs": 4319,
+  "warmBuildTimeMs": 4000,
+  "buildOutputSize": 1126449
 }

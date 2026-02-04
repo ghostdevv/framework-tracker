@@ -1,7 +1,12 @@
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { packagesDir } from './constants.ts'
-import { getDirectorySize, writeJsonFile, getFrameworkByPackage, parseArgs } from './utils.ts'
+import {
+  getDirectorySize,
+  writeJsonFile,
+  getFrameworkByPackage,
+  parseArgs,
+} from './utils.ts'
 import type { BuildStats } from './types.ts'
 
 function measureBuildTime(cwd: string): number {
@@ -13,7 +18,7 @@ function measureBuildTime(cwd: string): number {
 
 async function main() {
   const { packageName } = parseArgs(
-    'Usage: run-build-benchmark <package-name>\nExample: run-build-benchmark starter-astro'
+    'Usage: run-build-benchmark <package-name>\nExample: run-build-benchmark starter-astro',
   )
 
   const framework = await getFrameworkByPackage(packageName)
@@ -23,7 +28,9 @@ async function main() {
     process.exit(1)
   }
 
-  console.info(`Running build benchmark for ${framework.displayName} (${packageName})...\n`)
+  console.info(
+    `Running build benchmark for ${framework.displayName} (${packageName})...\n`,
+  )
 
   const packageDir = join(packagesDir, packageName)
 

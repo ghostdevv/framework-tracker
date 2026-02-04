@@ -34,7 +34,11 @@ async function main() {
 
     if (type === 'starter') {
       // Load install stats from artifact
-      const installStatsPath = join(artifactsDir, `install-stats-${name}`, 'install-stats.json')
+      const installStatsPath = join(
+        artifactsDir,
+        `install-stats-${name}`,
+        'install-stats.json',
+      )
       const installStats = readJsonFile<InstallStats>(installStatsPath)
 
       if (installStats) {
@@ -50,11 +54,17 @@ async function main() {
         }
         frameworkVersion = installStats.frameworkVersion
       } else {
-        console.info(`  ⚠ No install stats artifact found at ${installStatsPath}`)
+        console.info(
+          `  ⚠ No install stats artifact found at ${installStatsPath}`,
+        )
       }
 
       // Load build stats from artifact
-      const buildStatsPath = join(artifactsDir, `build-stats-${name}`, 'build-stats.json')
+      const buildStatsPath = join(
+        artifactsDir,
+        `build-stats-${name}`,
+        'build-stats.json',
+      )
       const buildStats = readJsonFile<BuildStats>(buildStatsPath)
 
       if (buildStats) {
@@ -72,7 +82,11 @@ async function main() {
 
     if (type === 'app') {
       // Load SSR stats from artifact
-      const ssrStatsPath = join(artifactsDir, `ssr-stats-${name}`, '.ci-stats.json')
+      const ssrStatsPath = join(
+        artifactsDir,
+        `ssr-stats-${name}`,
+        '.ci-stats.json',
+      )
       const ssrStats = readJsonFile<CIStats>(ssrStatsPath)
 
       if (ssrStats) {
@@ -99,7 +113,12 @@ async function main() {
 
     // Save versioned stats if we have a valid version
     if (frameworkVersion && frameworkVersion !== 'unknown') {
-      const versionedPath = join(packagesDir, packageName, 'stats', `${frameworkVersion}.json`)
+      const versionedPath = join(
+        packagesDir,
+        packageName,
+        'stats',
+        `${frameworkVersion}.json`,
+      )
       writeJsonFile(versionedPath, stats)
       console.info(`  ✓ Saved ${versionedPath}`)
     }

@@ -50,7 +50,9 @@ export function writeJsonFile(filePath: string, data: unknown): void {
  * Find a framework by package name and validate it exists.
  * Exits with error if not found.
  */
-export async function getFrameworkByPackage(packageName: string): Promise<FrameworkConfig> {
+export async function getFrameworkByPackage(
+  packageName: string,
+): Promise<FrameworkConfig> {
   const frameworks = await getFrameworks()
   const framework = frameworks.find((f) => f.package === packageName)
 
@@ -65,7 +67,10 @@ export async function getFrameworkByPackage(packageName: string): Promise<Framew
 /**
  * Parse command line arguments for benchmark scripts.
  */
-export function parseArgs(usage: string): { packageName: string; args: string[] } {
+export function parseArgs(usage: string): {
+  packageName: string
+  args: string[]
+} {
   const packageName = process.argv[2]
 
   if (!packageName) {

@@ -3,7 +3,11 @@ import { z } from 'zod'
 import { getFrameworks } from './get-frameworks.ts'
 import { packagesDir } from './constants.ts'
 import { readJsonFile } from './utils.ts'
-import { InstallStatsSchema, BuildStatsSchema, SSRStatsSchema } from './schemas.ts'
+import {
+  InstallStatsSchema,
+  BuildStatsSchema,
+  SSRStatsSchema,
+} from './schemas.ts'
 
 type BenchmarkType = 'install' | 'build' | 'ssr'
 
@@ -35,7 +39,7 @@ function validateFile(filePath: string, schema: z.ZodSchema): string[] {
   }
 
   return result.error.issues.map(
-    (issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`
+    (issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`,
   )
 }
 

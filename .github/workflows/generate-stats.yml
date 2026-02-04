@@ -7,6 +7,8 @@ on:
       - 'packages/starter-*/**'
       - '!packages/starter-*/.ci-stats.json'
       - '!packages/starter-*/stats/**'
+      - '!packages/starter-*/install-stats.json'
+      - '!packages/starter-*/build-stats.json'
       - 'packages/app-*/**'
       - '!packages/app-*/.ci-stats.json'
       - '!packages/app-*/stats/**'
@@ -16,7 +18,6 @@ on:
       - 'package.json'
 
 jobs:
-  # Load framework config and create filtered matrices
   setup:
     runs-on: ubuntu-latest
     outputs:
@@ -35,7 +36,6 @@ jobs:
           echo "build=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | map(.type) | contains(["build"]))]')" >> $GITHUB_OUTPUT
           echo "ssr=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | map(.type) | contains(["ssr"]))]')" >> $GITHUB_OUTPUT
 
-  # Install time measurements - parallel on fresh runners for fair comparison
   measure-install:
     needs: setup
     if: needs.setup.outputs.install-matrix != '[]'
@@ -56,63 +56,22 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Measure ${{ matrix.framework.displayName }} install time and sizes
+      - name: Install stats-generator dependencies
+        run: pnpm install --frozen-lockfile --filter @framework-tracker/stats-generator
+
+      - name: Run install benchmark
         run: |
           RUN_FREQUENCY=$(echo '${{ toJson(matrix.framework) }}' | jq -r '.measurements[] | select(.type == "install") | .runFrequency')
-          echo "Install run frequency: $RUN_FREQUENCY"
+          pnpm --filter @framework-tracker/stats-generator run:install ${{ matrix.framework.package }} $RUN_FREQUENCY
 
-          cp -r packages/${{ matrix.framework.package }} /tmp/framework-test
-          cd /tmp/framework-test
-
-          INSTALL_TIMES=()
-
-          for i in $(seq 1 $RUN_FREQUENCY); do
-            echo "Calculate Install time run number: $i of $RUN_FREQUENCY"
-
-            # Create a clean slate for a fresh install ensuring we don't use pnpm cache
-            rm -rf node_modules # Remove node modules
-            pnpm store prune  # Clear pnpm store cache
-            rm -f pnpm-lock.yaml  # Force dependency resolution
-
-            # Measure install time (full install with dev dependencies)
-            START=$(date +%s%N)
-            pnpm install
-            END=$(date +%s%N)
-            INSTALL_TIME=$((($END - $START) / 1000000))
-            INSTALL_TIMES+=($INSTALL_TIME)
-            echo "Install time: $INSTALL_TIME"
-          done
-
-          AVG_INSTALL_TIME=$(printf '%s\n' "${INSTALL_TIMES[@]}" | jq -s 'add/length')
-          MIN_INSTALL_TIME=$(printf '%s\n' "${INSTALL_TIMES[@]}" | jq -s 'min')
-          MAX_INSTALL_TIME=$(printf '%s\n' "${INSTALL_TIMES[@]}" | jq -s 'max')
-
-          # Extract framework version
-          FRAMEWORK_VERSION=$(pnpm list "${{ matrix.framework.frameworkPackage }}" --depth=0 --json | jq -r '.[0].dependencies["${{ matrix.framework.frameworkPackage }}"].version // .[0].devDependencies["${{ matrix.framework.frameworkPackage }}"].version')
-
-          # Measure node_modules size (in bytes)
-          NODE_MODULES_SIZE=$(du -sb node_modules | cut -f1)
-          echo "Node modules size: $SIZE"
-
-          # Clean and do production-only install
-          rm -rf node_modules
-          pnpm install --prod
-
-          # Measure node_modules size production only (in bytes)
-          NODE_MODULES_PROD_SIZE=$(du -sb node_modules | cut -f1)
-          echo "Node modules prod size: $SIZE_PROD_ONLY"
-
-          echo "${{ matrix.framework.displayName }} v${FRAMEWORK_VERSION} - Install Time Avg: ${AVG_INSTALL_TIME}ms, Install Time Min: ${MIN_INSTALL_TIME}ms, Install Time Max: ${MAX_INSTALL_TIME}ms, Size: ${NODE_MODULES_SIZE} bytes, Prod only: ${NODE_MODULES_PROD_SIZE} bytes"
-          echo "{\"frameworkVersion\": \"$FRAMEWORK_VERSION\", \"avgInstallTimeMs\": $AVG_INSTALL_TIME, \"minInstallTimeMs\": $MIN_INSTALL_TIME, \"maxInstallTimeMs\": $MAX_INSTALL_TIME, \"nodeModulesSize\": $NODE_MODULES_SIZE, \"nodeModulesSizeProdOnly\": $NODE_MODULES_PROD_SIZE}" > install-stats.json
-
-      - name: Upload install stats result
+      - name: Upload install stats
         uses: actions/upload-artifact@v4
         with:
           name: install-stats-${{ matrix.framework.name }}
-          path: /tmp/framework-test/install-stats.json
+          path: packages/${{ matrix.framework.package }}/install-stats.json
           retention-days: 1
+          if-no-files-found: error
 
-  # Build time measurements - parallel on fresh runners for fair comparison
   measure-build:
     needs: setup
     if: needs.setup.outputs.build-matrix != '[]'
@@ -132,37 +91,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'pnpm'
 
-      - name: Measure ${{ matrix.framework.displayName }} build time
-        run: |
-          cp -r packages/${{ matrix.framework.package }} /tmp/framework-test
-          cd /tmp/framework-test
-          pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-          START=$(date +%s%N)
-          pnpm build
-          END=$(date +%s%N)
-          COLD=$((($END - $START) / 1000000))
+      - name: Run build benchmark
+        run: pnpm --filter @framework-tracker/stats-generator run:build ${{ matrix.framework.package }}
 
-          START=$(date +%s%N)
-          pnpm build
-          END=$(date +%s%N)
-          WARM=$((($END - $START) / 1000000))
-
-          # Calculate build output size
-          BUILD_OUTPUT_SIZE=$(du -sb ${{ matrix.framework.buildOutputDir }} | cut -f1)
-
-          echo "${{ matrix.framework.displayName }} - Cold: ${COLD}ms, Warm: ${WARM}ms, Build Output: ${BUILD_OUTPUT_SIZE} bytes"
-          echo "{\"cold\": $COLD, \"warm\": $WARM, \"buildOutputSize\": $BUILD_OUTPUT_SIZE}" > build-time.json
-
-      - name: Upload build time result
+      - name: Upload build stats
         uses: actions/upload-artifact@v4
         with:
-          name: build-time-${{ matrix.framework.name }}
-          path: /tmp/framework-test/build-time.json
+          name: build-stats-${{ matrix.framework.name }}
+          path: packages/${{ matrix.framework.package }}/build-stats.json
           retention-days: 1
+          if-no-files-found: error
 
-  # SSR benchmark measurements - parallel on fresh runners for fair comparison
   measure-ssr:
     needs: setup
     if: needs.setup.outputs.ssr-matrix != '[]'
@@ -187,22 +131,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build ${{ matrix.framework.displayName }}
+      - name: Build app
         run: pnpm ${{ matrix.framework.buildScript }}
 
-      - name: Run ${{ matrix.framework.displayName }} SSR benchmark
+      - name: Run SSR benchmark
         run: pnpm --filter @framework-tracker/stats-generator run:ssr ${{ matrix.framework.package }}
         env:
           RUNNER_NAME: ubuntu-latest
 
-      - name: Upload SSR stats result
+      - name: Upload SSR stats
         uses: actions/upload-artifact@v4
         with:
           name: ssr-stats-${{ matrix.framework.name }}
           path: packages/${{ matrix.framework.package }}/.ci-stats.json
           retention-days: 1
+          if-no-files-found: error
 
-  # Collect measurements + generate stats
   generate-stats:
     needs: [setup, measure-install, measure-build, measure-ssr]
     if: always() && needs.setup.result == 'success' && (needs.measure-install.result == 'success' || needs.measure-build.result == 'success' || needs.measure-ssr.result == 'success')
@@ -231,59 +175,15 @@ jobs:
         with:
           path: artifacts
 
+      - name: List downloaded artifacts
+        run: find artifacts -type f -name "*.json" 2>/dev/null || echo "No artifacts found"
+
       - name: Save CI stats
-        run: |
-          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          BASE_STATS=$(jq -n --arg ts "$TIMESTAMP" '{timingMeasuredAt: $ts, runner: "ubuntu-latest"}')
+        run: pnpm --filter @framework-tracker/stats-generator save:ci-stats artifacts
+        env:
+          RUNNER_NAME: ubuntu-latest
 
-          jq -c '.[]' .github/frameworks.json | while read -r framework; do
-            NAME=$(echo "$framework" | jq -r '.name')
-            PACKAGE=$(echo "$framework" | jq -r '.package')
-            DISPLAY_NAME=$(echo "$framework" | jq -r '.displayName')
-            TYPE=$(echo "$framework" | jq -r '.type')
-
-            STATS="$BASE_STATS"
-            FRAMEWORK_VERSION=""
-
-            # Starter framework stats (install + build)
-            if [[ "$TYPE" == "starter" ]]; then
-              INSTALL_FILE="artifacts/install-stats-$NAME/install-stats.json"
-              if [[ -f "$INSTALL_FILE" ]]; then
-                STATS=$(echo "$STATS" | jq --slurpfile install "$INSTALL_FILE" '. + $install[0]')
-                FRAMEWORK_VERSION=$(jq -r '.frameworkVersion' "$INSTALL_FILE")
-              fi
-
-              BUILD_FILE="artifacts/build-time-$NAME/build-time.json"
-              if [[ -f "$BUILD_FILE" ]]; then
-                STATS=$(echo "$STATS" | jq --slurpfile build "$BUILD_FILE" '. + {coldBuildTimeMs: $build[0].cold, warmBuildTimeMs: $build[0].warm, buildOutputSize: $build[0].buildOutputSize}')
-              fi
-            fi
-
-            # App framework stats (SSR benchmarks)
-            if [[ "$TYPE" == "app" ]]; then
-              SSR_FILE="artifacts/ssr-stats-$NAME/.ci-stats.json"
-              if [[ -f "$SSR_FILE" ]]; then
-                STATS=$(echo "$STATS" | jq --slurpfile ssr "$SSR_FILE" '. + {frameworkVersion: $ssr[0].frameworkVersion, ssrOpsPerSec: $ssr[0].ssrOpsPerSec, ssrAvgLatencyMs: $ssr[0].ssrAvgLatencyMs, ssrSamples: $ssr[0].ssrSamples, ssrBodySizeKb: $ssr[0].ssrBodySizeKb, ssrDuplicationFactor: $ssr[0].ssrDuplicationFactor}')
-                FRAMEWORK_VERSION=$(jq -r '.frameworkVersion // empty' "$SSR_FILE")
-              fi
-            fi
-
-            echo "$DISPLAY_NAME v$FRAMEWORK_VERSION stats: $STATS"
-
-            # Create directories
-            mkdir -p "packages/$PACKAGE"
-            mkdir -p "packages/$PACKAGE/stats"
-
-            # Save to versioned file if we have a version
-            if [[ -n "$FRAMEWORK_VERSION" && "$FRAMEWORK_VERSION" != "null" ]]; then
-              echo "$STATS" > "packages/$PACKAGE/stats/$FRAMEWORK_VERSION.json"
-            fi
-
-            # Always update .ci-stats.json with latest
-            echo "$STATS" > "packages/$PACKAGE/.ci-stats.json"
-          done
-
-      - name: Collect stats
+      - name: Collect stats for docs
         run: pnpm collect:stats
 
       - name: Format

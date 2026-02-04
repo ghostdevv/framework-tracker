@@ -1,0 +1,159 @@
+name: Validate Stats Generation
+
+on:
+  pull_request:
+    paths:
+      - 'packages/stats-generator/**'
+      - '.github/workflows/generate-stats.yml'
+      - '.github/workflows/validate-stats.yml'
+      - '.github/frameworks.json'
+      - 'packages/app-*/**'
+      - 'packages/starter-*/**'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      install-matrix: ${{ steps.set-matrix.outputs.install }}
+      build-matrix: ${{ steps.set-matrix.outputs.build }}
+      ssr-matrix: ${{ steps.set-matrix.outputs.ssr }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set matrices from frameworks.json
+        id: set-matrix
+        run: |
+          FRAMEWORKS=$(cat .github/frameworks.json)
+          echo "install=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | map(.type) | contains(["install"]))]')" >> $GITHUB_OUTPUT
+          echo "build=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | map(.type) | contains(["build"]))]')" >> $GITHUB_OUTPUT
+          echo "ssr=$(echo "$FRAMEWORKS" | jq -c '[.[] | select(.measurements | map(.type) | contains(["ssr"]))]')" >> $GITHUB_OUTPUT
+
+  validate-install:
+    needs: setup
+    if: needs.setup.outputs.install-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJson(needs.setup.outputs.install-matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install stats-generator dependencies
+        run: pnpm install --frozen-lockfile --filter @framework-tracker/stats-generator
+
+      - name: Run install benchmark (single run for validation)
+        run: pnpm --filter @framework-tracker/stats-generator run:install ${{ matrix.framework.package }} 1
+
+      - name: Validate install stats
+        run: pnpm --filter @framework-tracker/stats-generator validate ${{ matrix.framework.package }} install
+
+  validate-build:
+    needs: setup
+    if: needs.setup.outputs.build-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJson(needs.setup.outputs.build-matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run build benchmark
+        run: pnpm --filter @framework-tracker/stats-generator run:build ${{ matrix.framework.package }}
+
+      - name: Validate build stats
+        run: pnpm --filter @framework-tracker/stats-generator validate ${{ matrix.framework.package }} build
+
+  validate-ssr:
+    needs: setup
+    if: needs.setup.outputs.ssr-matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJson(needs.setup.outputs.ssr-matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm ${{ matrix.framework.buildScript }}
+
+      - name: Run SSR benchmark
+        run: pnpm --filter @framework-tracker/stats-generator run:ssr ${{ matrix.framework.package }}
+        env:
+          RUNNER_NAME: ubuntu-latest
+
+      - name: Validate SSR stats
+        run: pnpm --filter @framework-tracker/stats-generator validate ${{ matrix.framework.package }}
+
+  validation-summary:
+    needs: [validate-install, validate-build, validate-ssr]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check validation results
+        run: |
+          echo "Validation Results:"
+          echo "  Install: ${{ needs.validate-install.result }}"
+          echo "  Build: ${{ needs.validate-build.result }}"
+          echo "  SSR: ${{ needs.validate-ssr.result }}"
+
+          FAILED=false
+
+          if [[ "${{ needs.validate-install.result }}" == "failure" ]]; then
+            echo "✗ Install validation failed!"
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.validate-build.result }}" == "failure" ]]; then
+            echo "✗ Build validation failed!"
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.validate-ssr.result }}" == "failure" ]]; then
+            echo "✗ SSR validation failed!"
+            FAILED=true
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            exit 1
+          fi
+
+          echo "✓ All validations passed!"

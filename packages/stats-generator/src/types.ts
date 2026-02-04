@@ -14,28 +14,47 @@ export interface FrameworkConfig {
   package: string
   frameworkPackage?: string
   buildScript?: string
+  buildOutputDir?: string
   testScript?: string
   measurements: MeasurementType[]
 }
 
 export interface CIStats {
+  timingMeasuredAt?: string
+  runner?: string
   frameworkVersion?: string
+  // Install stats
   avgInstallTimeMs?: number
   minInstallTimeMs?: number
   maxInstallTimeMs?: number
-  coldBuildTimeMs?: number
-  warmBuildTimeMs?: number
-  testTimeMs?: number
   nodeModulesSize?: number
   nodeModulesSizeProdOnly?: number
-  timingMeasuredAt?: string
-  runner?: string
-  // SSR benchmark stats
+  // Build stats
+  coldBuildTimeMs?: number
+  warmBuildTimeMs?: number
+  buildOutputSize?: number
+  testTimeMs?: number
+  // SSR stats
   ssrOpsPerSec?: number
   ssrAvgLatencyMs?: number
   ssrSamples?: number
   ssrBodySizeKb?: number
   ssrDuplicationFactor?: number
+}
+
+export interface InstallStats {
+  frameworkVersion: string
+  avgInstallTimeMs: number
+  minInstallTimeMs: number
+  maxInstallTimeMs: number
+  nodeModulesSize: number
+  nodeModulesSizeProdOnly: number
+}
+
+export interface BuildStats {
+  coldBuildTimeMs: number
+  warmBuildTimeMs: number
+  buildOutputSize: number
 }
 
 export interface FrameworkStats extends CIStats {

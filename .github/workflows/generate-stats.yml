@@ -5,12 +5,12 @@ on:
     branches: [main]
     paths:
       - 'packages/starter-*/**'
-      - '!packages/starter-*/.ci-stats.json'
+      - '!packages/starter-*/ci-stats.json'
       - '!packages/starter-*/stats/**'
       - '!packages/starter-*/install-stats.json'
       - '!packages/starter-*/build-stats.json'
       - 'packages/app-*/**'
-      - '!packages/app-*/.ci-stats.json'
+      - '!packages/app-*/ci-stats.json'
       - '!packages/app-*/stats/**'
       - 'packages/stats-generator/**'
       - '.github/workflows/generate-stats.yml'
@@ -137,13 +137,13 @@ jobs:
       - name: Run SSR benchmark
         run: pnpm --filter @framework-tracker/stats-generator run:ssr ${{ matrix.framework.package }}
         env:
-          RUNNER_NAME: ubuntu-latest
+          RUNNER_LABEL: ubuntu-latest
 
       - name: Upload SSR stats
         uses: actions/upload-artifact@v4
         with:
           name: ssr-stats-${{ matrix.framework.name }}
-          path: packages/${{ matrix.framework.package }}/.ci-stats.json
+          path: packages/${{ matrix.framework.package }}/ci-stats.json
           retention-days: 1
           if-no-files-found: error
 
@@ -181,7 +181,7 @@ jobs:
       - name: Save CI stats
         run: pnpm --filter @framework-tracker/stats-generator save:ci-stats artifacts
         env:
-          RUNNER_NAME: ubuntu-latest
+          RUNNER_LABEL: ubuntu-latest
 
       - name: Collect stats for docs
         run: pnpm collect:stats
@@ -210,7 +210,7 @@ jobs:
               --body "Automated stats update triggered by changes to starter packages.
 
           Includes:
-          - CI build time measurements (.ci-stats.json)
+          - CI build time measurements (ci-stats.json)
           - Versioned stats history (stats/<version>.json)
           - Generated framework comparison stats
 

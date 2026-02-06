@@ -7,7 +7,7 @@ import type { CIStats, InstallStats, BuildStats } from './types.ts'
 async function main() {
   const artifactsDir = process.argv[2] || 'artifacts'
   const timestamp = new Date().toISOString()
-  const runner = process.env.RUNNER_NAME || 'local'
+  const runner = process.env.RUNNER_LABEL || 'local'
 
   console.info('Saving CI stats...')
   console.info(`  Artifacts directory: ${artifactsDir}`)
@@ -21,7 +21,7 @@ async function main() {
 
     console.info(`Processing ${displayName} (${packageName})...`)
 
-    const existingStatsPath = join(packagesDir, packageName, '.ci-stats.json')
+    const existingStatsPath = join(packagesDir, packageName, 'ci-stats.json')
     const existingStats = readJsonFile<CIStats>(existingStatsPath)
 
     let stats: CIStats = {
@@ -85,7 +85,7 @@ async function main() {
       const ssrStatsPath = join(
         artifactsDir,
         `ssr-stats-${name}`,
-        '.ci-stats.json',
+        'ci-stats.json',
       )
       const ssrStats = readJsonFile<CIStats>(ssrStatsPath)
 
@@ -106,8 +106,8 @@ async function main() {
       }
     }
 
-    // Save to .ci-stats.json
-    const ciStatsPath = join(packagesDir, packageName, '.ci-stats.json')
+    // Save to ci-stats.json
+    const ciStatsPath = join(packagesDir, packageName, 'ci-stats.json')
     writeJsonFile(ciStatsPath, stats)
     console.info(`  ✓ Saved ${ciStatsPath}`)
 

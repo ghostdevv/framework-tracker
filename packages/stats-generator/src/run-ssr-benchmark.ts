@@ -49,7 +49,7 @@ async function main() {
 
   const ciStats = {
     timingMeasuredAt: timestamp,
-    runner: process.env.RUNNER_NAME || 'local',
+    runner: process.env.RUNNER_LABEL || 'local',
     frameworkVersion,
     ssrOpsPerSec: result.opsPerSec,
     ssrAvgLatencyMs: result.avgLatencyMs,
@@ -58,7 +58,7 @@ async function main() {
     ssrDuplicationFactor: result.duplicationFactor,
   }
 
-  const outputPath = join(packagesDir, result.package, '.ci-stats.json')
+  const outputPath = join(packagesDir, result.package, 'ci-stats.json')
   await writeFile(outputPath, JSON.stringify(ciStats, null, 2), 'utf-8')
 
   console.info(

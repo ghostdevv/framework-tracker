@@ -23,7 +23,7 @@ const STARTER_BENCHMARKS: BenchmarkConfig[] = [
 ]
 
 const APP_BENCHMARKS: BenchmarkConfig[] = [
-  { type: 'ssr', file: '.ci-stats.json', schema: SSRStatsSchema },
+  { type: 'ssr', file: 'ci-stats.json', schema: SSRStatsSchema },
 ]
 
 function validateFile(filePath: string, schema: z.ZodSchema): string[] {

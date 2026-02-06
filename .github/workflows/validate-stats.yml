@@ -1,0 +1,57 @@
+name: Validate Stats Generation
+
+on:
+  pull_request:
+    paths:
+      - 'packages/stats-generator/**'
+      - '.github/workflows/generate-stats.yml'
+      - '.github/workflows/validate-stats.yml'
+      - '.github/frameworks.json'
+      - 'packages/app-*/**'
+      - 'packages/starter-*/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run all benchmarks and validate
+        run: |
+          set -e
+
+          echo "=== Running SSR benchmarks ==="
+          for pkg in app-astro app-nuxt; do
+            echo "Building $pkg..."
+            pnpm build:$pkg
+            echo "Running SSR benchmark for $pkg..."
+            pnpm --filter @framework-tracker/stats-generator run:ssr $pkg
+          done
+
+          echo ""
+          echo "=== Running starter benchmarks ==="
+          FRAMEWORKS=$(cat .github/frameworks.json)
+          echo "$FRAMEWORKS" | jq -c '.[] | select(.type == "starter")' | while read -r framework; do
+            NAME=$(echo "$framework" | jq -r '.package')
+            echo "Running install benchmark for $NAME (1 run)..."
+            pnpm --filter @framework-tracker/stats-generator run:install $NAME 1
+            echo "Running build benchmark for $NAME..."
+            pnpm --filter @framework-tracker/stats-generator run:build $NAME
+          done
+
+          echo ""
+          echo "=== Validating all outputs ==="
+          pnpm --filter @framework-tracker/stats-generator validate

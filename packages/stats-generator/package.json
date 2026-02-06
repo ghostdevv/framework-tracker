@@ -4,14 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "collect": "node --experimental-strip-types src/collect-stats.ts",
-    "run:ssr": "node --experimental-strip-types src/run-ssr-benchmark.ts",
+    "collect": "node src/collect-stats.ts",
+    "run:ssr": "node src/run-ssr-benchmark.ts",
+    "run:install": "node src/run-install-benchmark.ts",
+    "run:build": "node src/run-build-benchmark.ts",
+    "save:ci-stats": "node src/save-ci-stats.ts",
+    "validate": "node src/validate-stats.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "tinybench": "^2.6.0"
+    "tinybench": "^2.6.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.0.3"

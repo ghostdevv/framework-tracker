@@ -38,7 +38,7 @@ function measureInstallTime(cwd: string): number {
   cleanForFreshInstall(cwd)
 
   const start = performance.now()
-  execCommand('pnpm install', cwd)
+  execCommand('pnpm install --no-frozen-lockfile', cwd)
   const end = performance.now()
 
   return Math.round(end - start)
@@ -121,7 +121,7 @@ async function main() {
     console.info(`node_modules size: ${nodeModulesSize} bytes`)
 
     rmSync(nodeModulesPath, { recursive: true, force: true })
-    execCommand('pnpm install --prod', tempDir)
+    execCommand('pnpm install --prod --no-frozen-lockfile', tempDir)
 
     const nodeModulesSizeProdOnly = getDirectorySize(nodeModulesPath)
     console.info(

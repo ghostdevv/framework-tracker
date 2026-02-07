@@ -5,15 +5,15 @@
   "devDependencies": 8,
   "package": "starter-react-router",
   "installTimeMs": 2687,
-  "coldBuildTimeMs": 2747,
-  "warmBuildTimeMs": 2746,
+  "coldBuildTimeMs": 2796,
+  "warmBuildTimeMs": 2687,
   "buildOutputSize": 397312,
-  "timingMeasuredAt": "2026-02-06T12:46:59.033Z",
+  "timingMeasuredAt": "2026-02-07T11:09:22.757Z",
   "runner": "ubuntu-latest",
-  "nodeModulesSize": 141656064,
+  "nodeModulesSize": 141660160,
   "nodeModulesSizeProdOnly": 42184704,
   "frameworkVersion": "7.10.1",
-  "avgInstallTimeMs": 1889,
-  "minInstallTimeMs": 1554,
-  "maxInstallTimeMs": 2931
+  "avgInstallTimeMs": 1796.4,
+  "minInstallTimeMs": 1437,
+  "maxInstallTimeMs": 2945
 }

@@ -1,13 +1,13 @@
 {
-  "timingMeasuredAt": "2026-02-06T12:46:59.033Z",
+  "timingMeasuredAt": "2026-02-07T11:09:22.757Z",
   "runner": "ubuntu-latest",
   "frameworkVersion": "4.2.2",
-  "avgInstallTimeMs": 5099.8,
-  "minInstallTimeMs": 4288,
-  "maxInstallTimeMs": 7963,
-  "nodeModulesSize": 255062016,
+  "avgInstallTimeMs": 4696.6,
+  "minInstallTimeMs": 4025,
+  "maxInstallTimeMs": 7212,
+  "nodeModulesSize": 255066112,
   "nodeModulesSizeProdOnly": 255053824,
-  "coldBuildTimeMs": 6962,
-  "warmBuildTimeMs": 6545,
+  "coldBuildTimeMs": 6428,
+  "warmBuildTimeMs": 6132,
   "buildOutputSize": 2461696
 }

@@ -5,15 +5,15 @@
   "devDependencies": 7,
   "package": "starter-sveltekit",
   "installTimeMs": 2878,
-  "coldBuildTimeMs": 4220,
-  "warmBuildTimeMs": 3910,
+  "coldBuildTimeMs": 3933,
+  "warmBuildTimeMs": 3532,
   "buildOutputSize": 1343488,
-  "timingMeasuredAt": "2026-02-06T12:46:59.033Z",
+  "timingMeasuredAt": "2026-02-07T11:09:22.757Z",
   "runner": "ubuntu-latest",
-  "nodeModulesSize": 95027200,
-  "nodeModulesSizeProdOnly": 20480,
+  "nodeModulesSize": 95031296,
+  "nodeModulesSizeProdOnly": 24576,
   "frameworkVersion": "2.49.4",
-  "avgInstallTimeMs": 2022.8,
-  "minInstallTimeMs": 1860,
-  "maxInstallTimeMs": 2606
+  "avgInstallTimeMs": 2025.6,
+  "minInstallTimeMs": 1841,
+  "maxInstallTimeMs": 2450
 }

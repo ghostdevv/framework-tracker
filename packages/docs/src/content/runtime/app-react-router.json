@@ -1,4 +1,7 @@
 {
+  "name": "React Router SSR",
+  "package": "app-react-router",
+  "type": "ssr-app",
   "timingMeasuredAt": "2026-02-07T11:09:22.757Z",
   "runner": "ubuntu-latest",
   "frameworkVersion": "7.10.1",
